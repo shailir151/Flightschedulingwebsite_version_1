@@ -5,7 +5,6 @@ import { Label } from './ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Calendar } from './ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
-import { RadioGroup, RadioGroupItem } from './ui/radio-group';
 import { CalendarIcon } from 'lucide-react';
 import type { Flight, Aircraft, Instructor } from '../App';
 
@@ -19,10 +18,10 @@ interface ScheduleDialogProps {
   preselectedDate?: Date;
   preselectedTime?: string;
   preselectedEndTime?: string;
+  preselectedAircraft?: string;
+  preselectedInstructor?: string;
   filteredAircraftIds?: string[];
   filteredInstructorIds?: string[];
-  setFilteredAircraftIds?: (ids: string[]) => void;
-  setFilteredInstructorIds?: (ids: string[]) => void;
 }
 
 export function ScheduleDialog({ 
@@ -35,34 +34,30 @@ export function ScheduleDialog({
   preselectedDate,
   preselectedTime,
   preselectedEndTime,
+  preselectedAircraft,
+  preselectedInstructor,
   filteredAircraftIds = [],
-  filteredInstructorIds = [],
-  setFilteredAircraftIds,
-  setFilteredInstructorIds
+  filteredInstructorIds = []
 }: ScheduleDialogProps) {
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [selectedAircraft, setSelectedAircraft] = useState<string>('');
   const [selectedInstructor, setSelectedInstructor] = useState<string>('');
-  const [startTime, setStartTime] = useState<string>('09:00');
-  const [duration, setDuration] = useState<string>('2');
-  const [flightType, setFlightType] = useState<'dual' | 'solo' | 'checkride'>('dual');
   const [flightCategory, setFlightCategory] = useState<string>('standard');
 
-  // Helper to calculate duration from start and end times
+  const startTime = preselectedTime || '09:00';
+  const endTime = preselectedEndTime || '11:00';
+
+  // Calculate duration from start and end times
   const calculateDuration = (start: string, end: string) => {
     const [startHours, startMinutes] = start.split(':').map(Number);
     const [endHours, endMinutes] = end.split(':').map(Number);
     const startTotalMinutes = startHours * 60 + startMinutes;
     const endTotalMinutes = endHours * 60 + endMinutes;
     const durationMinutes = endTotalMinutes - startTotalMinutes;
-    return (durationMinutes / 60).toString();
+    return (durationMinutes / 60).toFixed(1);
   };
 
-  // Convert time string to minutes
-  const timeToMinutes = (timeString: string) => {
-    const [hours, minutes] = timeString.split(':').map(Number);
-    return hours * 60 + minutes;
-  };
+  const duration = calculateDuration(startTime, endTime);
 
   // Format time for display (e.g., "09:00" -> "9:00 AM")
   const formatTime = (timeString: string) => {
@@ -72,94 +67,32 @@ export function ScheduleDialog({
     return `${displayHours}:${String(minutes).padStart(2, '0')} ${period}`;
   };
 
-  // Calculate end time from start time and duration
-  const calculateEndTime = (start: string, durationHours: string) => {
-    const durationNum = parseFloat(durationHours);
-    const [hours, minutes] = start.split(':').map(Number);
-    const endHours = hours + Math.floor(durationNum);
-    const endMinutes = minutes + (durationNum % 1) * 60;
-    return `${String(endHours + Math.floor(endMinutes / 60)).padStart(2, '0')}:${String(endMinutes % 60).padStart(2, '0')}`;
-  };
-
-  // Check if instructor is available during the entire time block
-  const isInstructorAvailableForTimeBlock = (instructorName: string, start: string, end: string, selectedDate: Date) => {
-    const startMinutes = timeToMinutes(start);
-    const endMinutes = timeToMinutes(end);
-
-    const dayFlights = existingFlights.filter(f => 
-      f.date.toDateString() === selectedDate.toDateString() && 
-      f.status !== 'cancelled'
-    );
-
-    const instructorFlights = dayFlights.filter(flight => flight.instructor === instructorName);
-
-    // Check if any instructor flight overlaps with our time block
-    return !instructorFlights.some(flight => {
-      const flightStartMinutes = timeToMinutes(flight.startTime);
-      const flightEndMinutes = timeToMinutes(flight.endTime);
-      
-      // Check for overlap
-      return (startMinutes < flightEndMinutes && endMinutes > flightStartMinutes);
-    });
-  };
-
-  // Check if aircraft is available during the entire time block
-  const isAircraftAvailableForTimeBlock = (aircraftReg: string, start: string, end: string, selectedDate: Date) => {
-    const startMinutes = timeToMinutes(start);
-    const endMinutes = timeToMinutes(end);
-
-    const dayFlights = existingFlights.filter(f => 
-      f.date.toDateString() === selectedDate.toDateString() && 
-      f.status !== 'cancelled'
-    );
-
-    const aircraftFlights = dayFlights.filter(flight => flight.aircraft === aircraftReg);
-
-    // Check if any aircraft flight overlaps with our time block
-    return !aircraftFlights.some(flight => {
-      const flightStartMinutes = timeToMinutes(flight.startTime);
-      const flightEndMinutes = timeToMinutes(flight.endTime);
-      
-      // Check for overlap
-      return (startMinutes < flightEndMinutes && endMinutes > flightStartMinutes);
-    });
-  };
-
-  // Update date and time when preselected values change
+  // Update date when preselected
   useEffect(() => {
     if (preselectedDate) {
       setDate(preselectedDate);
     }
   }, [preselectedDate]);
 
+  // Auto-select aircraft if preselected
   useEffect(() => {
-    if (preselectedTime) {
-      setStartTime(preselectedTime);
+    if (preselectedAircraft && open) {
+      setSelectedAircraft(preselectedAircraft);
     }
-  }, [preselectedTime]);
+  }, [preselectedAircraft, open]);
 
+  // Auto-select instructor if preselected
   useEffect(() => {
-    if (preselectedTime && preselectedEndTime) {
-      const calculatedDuration = calculateDuration(preselectedTime, preselectedEndTime);
-      setDuration(calculatedDuration);
+    if (preselectedInstructor && open) {
+      setSelectedInstructor(preselectedInstructor);
     }
-  }, [preselectedTime, preselectedEndTime]);
-
-  // Auto-select aircraft if only one is in the filtered list
-  useEffect(() => {
-    if (filteredAircraftIds.length === 1 && !selectedAircraft) {
-      setSelectedAircraft(filteredAircraftIds[0]);
-    }
-  }, [filteredAircraftIds, selectedAircraft]);
+  }, [preselectedInstructor, open]);
 
   // Reset form when dialog closes
   useEffect(() => {
     if (!open) {
       setSelectedAircraft('');
       setSelectedInstructor('');
-      setStartTime('09:00');
-      setDuration('2');
-      setFlightType('dual');
       setFlightCategory('standard');
     }
   }, [open]);
@@ -170,13 +103,6 @@ export function ScheduleDialog({
       return;
     }
 
-    const durationHours = parseFloat(duration);
-    const [hours, minutes] = startTime.split(':').map(Number);
-    const endHours = hours + Math.floor(durationHours);
-    const endMinutes = minutes + (durationHours % 1) * 60;
-    
-    const endTime = `${String(endHours + Math.floor(endMinutes / 60)).padStart(2, '0')}:${String(endMinutes % 60).padStart(2, '0')}`;
-
     const newFlight: Flight = {
       id: Date.now().toString(),
       date,
@@ -185,7 +111,7 @@ export function ScheduleDialog({
       aircraft: selectedAircraft,
       instructor: selectedInstructor,
       student: 'You',
-      type: flightType,
+      type: 'dual',
       status: 'scheduled',
       flightCategory: flightCategory as any,
     };
@@ -193,50 +119,19 @@ export function ScheduleDialog({
     onSchedule(newFlight);
   };
 
-  // Filter aircraft and instructors based on the active filter
-  const displayedAircraft = filteredAircraftIds.length > 0
-    ? aircraft.filter(a => a.available && filteredAircraftIds.includes(a.registration))
-    : aircraft.filter(a => a.available);
+  // Determine if we're selecting aircraft or instructor
+  const isSelectingInstructor = preselectedAircraft !== undefined;
+  const isSelectingAircraft = preselectedInstructor !== undefined;
 
-  const displayedInstructors = filteredInstructorIds.length > 0
-    ? instructors.filter(i => i.available && filteredInstructorIds.includes(i.id))
+  // Get available instructors (filtered by time availability)
+  const availableInstructors = filteredInstructorIds.length > 0
+    ? instructors.filter(i => filteredInstructorIds.includes(i.id))
     : instructors.filter(i => i.available);
 
-  // Calculate current end time based on start time and duration
-  const currentEndTime = calculateEndTime(startTime, duration);
-
-  // If we have filtered aircraft (coming from filtered view), trust that selection
-  // Otherwise, further filter aircraft to only show those available during the selected time block
-  const availableAircraftForTimeBlock = (filteredAircraftIds.length > 0 && preselectedTime) 
-    ? displayedAircraft // Trust the filtered selection from the grid
-    : date 
-      ? displayedAircraft.filter(a => isAircraftAvailableForTimeBlock(a.registration, startTime, currentEndTime, date))
-      : displayedAircraft;
-
-  // If we have filtered instructors (coming from filtered view), trust that selection
-  // Otherwise, further filter instructors to only show those available during the selected time block
-  const availableInstructorsForTimeBlock = (filteredInstructorIds.length > 0 && preselectedTime)
-    ? displayedInstructors.filter(i => {
-        // Still check aircraft authorization if one is selected
-        if (selectedAircraft && i.authorizedAircraft) {
-          return i.authorizedAircraft.includes(selectedAircraft);
-        }
-        return true;
-      })
-    : date 
-      ? displayedInstructors.filter(i => {
-          // Check time availability
-          const isAvailable = isInstructorAvailableForTimeBlock(i.name, startTime, currentEndTime, date);
-          
-          // If an aircraft is selected, check authorization
-          if (selectedAircraft && i.authorizedAircraft) {
-            const isAuthorized = i.authorizedAircraft.includes(selectedAircraft);
-            return isAvailable && isAuthorized;
-          }
-          
-          return isAvailable;
-        })
-      : displayedInstructors;
+  // Get available aircraft (filtered by time availability)
+  const availableAircraft = filteredAircraftIds.length > 0
+    ? aircraft.filter(a => filteredAircraftIds.includes(a.registration))
+    : aircraft.filter(a => a.available);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -244,40 +139,40 @@ export function ScheduleDialog({
         <DialogHeader>
           <DialogTitle>Schedule a Flight</DialogTitle>
           <DialogDescription id="schedule-dialog-description">
-            Book your flight training session with an instructor and aircraft
+            Book your flight training session
           </DialogDescription>
         </DialogHeader>
 
-        {(filteredAircraftIds.length > 0 || filteredInstructorIds.length > 0) && (
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 -mt-2">
+        <div className="space-y-6 py-4">
+          {/* Blue info box */}
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <span className="text-sm font-medium text-blue-900">Selected Time Block:</span>
                 <span className="text-sm font-semibold text-blue-700">
-                  {formatTime(startTime)} - {formatTime(currentEndTime)}
+                  {formatTime(startTime)} - {formatTime(endTime)}
                 </span>
               </div>
-              {filteredAircraftIds.length > 0 && (
+              {isSelectingInstructor && preselectedAircraft && (
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-blue-900">Aircraft:</span>
+                  <span className="text-sm font-medium text-blue-900">Selected Aircraft:</span>
                   <span className="text-sm font-semibold text-blue-700">
-                    {filteredAircraftIds.join(', ')}
+                    {preselectedAircraft}
                   </span>
                 </div>
               )}
-              {filteredInstructorIds.length > 0 && (
-                <div className="text-xs text-blue-700">
-                  Available Instructors: {filteredInstructorIds.map(id => {
-                    const instructor = instructors.find(i => i.id === id);
-                    return instructor?.name;
-                  }).join(', ')}
+              {isSelectingAircraft && preselectedInstructor && (
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-blue-900">Selected Instructor:</span>
+                  <span className="text-sm font-semibold text-blue-700">
+                    {preselectedInstructor}
+                  </span>
                 </div>
               )}
             </div>
           </div>
-        )}
 
-        <div className="space-y-6 py-4">
+          {/* Flight Category */}
           <div className="space-y-2">
             <Label>Flight Category</Label>
             <Select value={flightCategory} onValueChange={setFlightCategory}>
@@ -304,6 +199,7 @@ export function ScheduleDialog({
             </Select>
           </div>
 
+          {/* Date */}
           <div className="space-y-2">
             <Label>Date</Label>
             <Popover>
@@ -324,62 +220,70 @@ export function ScheduleDialog({
             </Popover>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          {/* Start Time, End Time, Duration - Display Only */}
+          <div className="grid grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label>Start Time</Label>
-              <Select value={startTime} onValueChange={setStartTime}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {Array.from({ length: 13 }, (_, i) => i + 6).flatMap(hour => [
-                    <SelectItem key={`${hour}:00`} value={`${String(hour).padStart(2, '0')}:00`}>
-                      {hour}:00 {hour < 12 ? 'AM' : 'PM'}
-                    </SelectItem>,
-                    <SelectItem key={`${hour}:30`} value={`${String(hour).padStart(2, '0')}:30`}>
-                      {hour}:30 {hour < 12 ? 'AM' : 'PM'}
-                    </SelectItem>
-                  ])}
-                </SelectContent>
-              </Select>
+              <div className="border rounded-md px-3 py-2 bg-gray-50">
+                {formatTime(startTime)}
+              </div>
             </div>
-
             <div className="space-y-2">
-              <Label>Duration (hours)</Label>
-              <Select value={duration} onValueChange={setDuration}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="0.5">0.5 hours</SelectItem>
-                  <SelectItem value="1">1.0 hours</SelectItem>
-                  <SelectItem value="1.5">1.5 hours</SelectItem>
-                  <SelectItem value="2">2.0 hours</SelectItem>
-                  <SelectItem value="2.5">2.5 hours</SelectItem>
-                  <SelectItem value="3">3.0 hours</SelectItem>
-                </SelectContent>
-              </Select>
+              <Label>End Time</Label>
+              <div className="border rounded-md px-3 py-2 bg-gray-50">
+                {formatTime(endTime)}
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Duration</Label>
+              <div className="border rounded-md px-3 py-2 bg-gray-50">
+                {duration} hours
+              </div>
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label>Instructor</Label>
-            <Select value={selectedInstructor} onValueChange={setSelectedInstructor}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select an instructor" />
-              </SelectTrigger>
-              <SelectContent>
-                {availableInstructorsForTimeBlock.map(i => (
-                  <SelectItem key={i.id} value={i.name}>
-                    {i.name} - {i.certifications.join(', ')}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {availableInstructorsForTimeBlock.length === 0 && (
-              <p className="text-sm text-amber-600">No instructors currently available</p>
-            )}
-          </div>
+          {/* Instructor or Aircraft Selector */}
+          {isSelectingInstructor && (
+            <div className="space-y-2">
+              <Label>Available Instructors</Label>
+              <Select value={selectedInstructor} onValueChange={setSelectedInstructor}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select an instructor" />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableInstructors.map(i => (
+                    <SelectItem key={i.id} value={i.name}>
+                      {i.name} - {i.certifications.join(', ')}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {availableInstructors.length === 0 && (
+                <p className="text-sm text-amber-600">No instructors currently available</p>
+              )}
+            </div>
+          )}
+
+          {isSelectingAircraft && (
+            <div className="space-y-2">
+              <Label>Available Aircrafts</Label>
+              <Select value={selectedAircraft} onValueChange={setSelectedAircraft}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select an aircraft" />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableAircraft.map(a => (
+                    <SelectItem key={a.id} value={a.registration}>
+                      {a.registration} - {a.type}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {availableAircraft.length === 0 && (
+                <p className="text-sm text-amber-600">No aircraft currently available</p>
+              )}
+            </div>
+          )}
         </div>
 
         <DialogFooter>
