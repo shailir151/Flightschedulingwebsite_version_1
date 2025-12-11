@@ -1,7 +1,5 @@
 import { useState } from 'react';
 import { Card, CardContent } from './ui/card';
-import { ScrollArea } from './ui/scroll-area';
-import { Badge } from './ui/badge';
 import { Calendar } from './ui/calendar';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import type { Flight, Aircraft, Instructor } from '../App';
@@ -59,11 +57,9 @@ export function MasterSchedule({
   onDateChange,
   onCellClick
 }: MasterScheduleProps) {
-  const [hoveredTime, setHoveredTime] = useState<string | null>(null);
   const [hoveredColumn, setHoveredColumn] = useState<string | null>(null);
   const [hoveredRow, setHoveredRow] = useState<string | null>(null);
   const [localDate, setLocalDate] = useState(selectedDate);
-  const [isLegendCollapsed, setIsLegendCollapsed] = useState(false);
   const [isCalendarCollapsed, setIsCalendarCollapsed] = useState(true);
 
   // Generate time slots from 6:00 AM to 10:00 PM (every 30 minutes)
@@ -191,12 +187,12 @@ export function MasterSchedule({
           <div className="flex gap-2">
             <Card className="flex-shrink-0">
               <CardContent className="p-1">
-                <div className="flex items-center justify-center -m-2">
+                <div className="flex items-center justify-center">
                   <Calendar
                     mode="single"
                     selected={localDate}
                     onSelect={handleDateChange}
-                    className="rounded-md scale-[0.65]"
+                    className="rounded-md scale-[0.75]"
                   />
                 </div>
               </CardContent>
@@ -438,15 +434,23 @@ export function MasterSchedule({
                           </td>
                           {timeSlots.map((time) => {
                             const reservation = getReservation(time, instructor.name, 'instructor');
+                            
+                            // If this slot is part of a reservation but not the first slot, skip it
+                            if (reservation && !isFirstSlotOfReservation(time, reservation)) {
+                              return null;
+                            }
+                            
                             const isUserReservation = reservation && reservation.student === currentUser;
                             const category = reservation?.flightCategory || 'standard';
                             const colorClass = CATEGORY_COLORS[category];
                             const isColumnHovered = hoveredColumn === time;
                             const isRowHovered = hoveredRow === `instructor-${instructor.id}`;
+                            const spanSlots = reservation ? getFlightSpanSlots(reservation) : 1;
                             
                             return (
                               <td 
-                                key={time} 
+                                key={time}
+                                colSpan={spanSlots}
                                 className={`border border-slate-300 p-1 sm:p-0.5 text-center text-[8px] sm:text-[7px] min-w-[36px] sm:min-w-[32px] transition-colors ${
                                   reservation ? colorClass : ((isColumnHovered || isRowHovered) ? 'bg-blue-100' : 'bg-white')
                                 } ${(isColumnHovered || isRowHovered) && reservation ? 'ring-2 ring-blue-400 ring-inset' : ''}`}
@@ -624,15 +628,23 @@ export function MasterSchedule({
                         </td>
                         {timeSlots.map((time) => {
                           const reservation = getReservation(time, instructor.name, 'instructor');
+                          
+                          // If this slot is part of a reservation but not the first slot, skip it
+                          if (reservation && !isFirstSlotOfReservation(time, reservation)) {
+                            return null;
+                          }
+                          
                           const isUserReservation = reservation && reservation.student === currentUser;
                           const category = reservation?.flightCategory || 'standard';
                           const colorClass = CATEGORY_COLORS[category];
                           const isColumnHovered = hoveredColumn === time;
                           const isRowHovered = hoveredRow === `instructor-${instructor.id}`;
+                          const spanSlots = reservation ? getFlightSpanSlots(reservation) : 1;
                           
                           return (
                             <td 
-                              key={time} 
+                              key={time}
+                              colSpan={spanSlots}
                               className={`border border-slate-300 p-1 sm:p-0.5 text-center text-[8px] sm:text-[7px] min-w-[36px] sm:min-w-[32px] transition-colors ${
                                 reservation ? colorClass : ((isColumnHovered || isRowHovered) ? 'bg-blue-100' : 'bg-white')
                               } ${(isColumnHovered || isRowHovered) && reservation ? 'ring-2 ring-blue-400 ring-inset' : ''}`}

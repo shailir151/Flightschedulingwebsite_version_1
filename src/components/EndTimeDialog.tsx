@@ -62,10 +62,10 @@ export function EndTimeDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md" aria-describedby="end-time-dialog-description">
         <DialogHeader>
           <DialogTitle className="text-xl" style={{ fontFamily: 'inherit' }}>Select End Time</DialogTitle>
-          <DialogDescription>
+          <DialogDescription id="end-time-dialog-description">
             {resourceType === 'aircraft' ? 'Aircraft' : 'Instructor'}: <span className="font-semibold">{resourceName}</span>
             <br />
             Start Time: <span className="font-semibold">{formatTimeDisplay(startTime)}</span>

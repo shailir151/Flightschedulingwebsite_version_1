@@ -13,7 +13,7 @@ import { BookingInterface } from './components/BookingInterface';
 import { MasterSchedule } from './components/MasterSchedule';
 import { EndTimeDialog } from './components/EndTimeDialog';
 import { ImageWithFallback } from './components/figma/ImageWithFallback';
-import { Plane, Calendar as CalendarIcon, Users, BookOpen, ChevronLeft, ChevronRight, ZoomIn, ZoomOut, RotateCcw } from 'lucide-react';
+import { Plane, Calendar as CalendarIcon, Users, BookOpen, ChevronLeft, ChevronRight, ZoomIn, ZoomOut, RotateCcw, X } from 'lucide-react';
 import logo from 'figma:asset/6ef1e3d2e65cbd6e5803269fdc27cc1e9b913d87.png';
 
 export interface Flight {
@@ -767,16 +767,31 @@ export default function App() {
         preselectedAircraft={preselectedAircraft}
         preselectedInstructor={preselectedInstructors.length > 0 ? mockInstructors.find(i => i.id === preselectedInstructors[0])?.name : undefined}
         filteredAircraftIds={filteredAircraftIds}
-        filteredInstructorIds={filteredInstructorIds}
+        filteredInstructorIds={filteredInstructorIds.length > 0 ? filteredInstructorIds : preselectedInstructors}
       />
 
       <Dialog open={isMasterScheduleOpen} onOpenChange={setIsMasterScheduleOpen}>
-        <DialogContent className="!max-w-none !w-screen !h-screen p-0 gap-0 overflow-hidden flex flex-col !m-0 !translate-x-0 !translate-y-0 !left-0 !top-0 !rounded-none !border-0 !inset-0" aria-describedby="master-schedule-description">
-          <DialogHeader className="px-3 sm:px-4 py-2 sm:py-2.5 border-b bg-slate-50 flex-shrink-0 min-h-fit">
-            <DialogTitle className="text-sm sm:text-base">Master Schedule - {selectedDate?.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</DialogTitle>
+        <DialogContent 
+          className="!max-w-none p-0 gap-0 overflow-hidden flex flex-col !m-0 !translate-x-0 !translate-y-0 !left-0 !top-0 !rounded-none !border-0 !inset-0 [&>button]:hidden" 
+          style={{
+            width: `${100 / zoomScale}vw`,
+            height: `${100 / zoomScale}vh`
+          }}
+          aria-describedby="master-schedule-description">
+          <DialogHeader className="px-3 sm:px-4 py-2 sm:py-2.5 border-b bg-slate-50 flex-shrink-0 min-h-fit relative">
+            <DialogTitle className="text-sm sm:text-base pr-8">Master Schedule - {selectedDate?.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</DialogTitle>
             <DialogDescription id="master-schedule-description" className="text-xs">
               Complete schedule view for all aircraft and instructors
             </DialogDescription>
+            <Button
+              onClick={() => setIsMasterScheduleOpen(false)}
+              variant="ghost"
+              size="sm"
+              className="absolute top-2 right-2 h-8 w-8 p-0 rounded-sm opacity-70 hover:opacity-100"
+            >
+              <X className="h-4 w-4" />
+              <span className="sr-only">Close</span>
+            </Button>
           </DialogHeader>
           <div className="flex-1 min-h-0 overflow-hidden w-full">
             {selectedDate && (

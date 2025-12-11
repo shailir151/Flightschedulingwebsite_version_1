@@ -498,6 +498,10 @@
     top: calc(var(--spacing) * 0);
   }
 
+  .top-2 {
+    top: calc(var(--spacing) * 2);
+  }
+
   .top-4 {
     top: calc(var(--spacing) * 4);
   }
@@ -616,10 +620,6 @@
 
   .\!m-0 {
     margin: calc(var(--spacing) * 0) !important;
-  }
-
-  .-m-2 {
-    margin: calc(var(--spacing) * -2);
   }
 
   .-mx-1 {
@@ -761,10 +761,6 @@
     height: 100%;
   }
 
-  .\!h-screen {
-    height: 100vh !important;
-  }
-
   .h-2\.5 {
     height: calc(var(--spacing) * 2.5);
   }
@@ -871,10 +867,6 @@
 
   .min-h-screen {
     min-height: 100vh;
-  }
-
-  .\!w-screen {
-    width: 100vw !important;
   }
 
   .w-2\.5 {
@@ -1037,12 +1029,12 @@
     translate: var(--tw-translate-x) var(--tw-translate-y);
   }
 
-  .scale-\[0\.65\] {
-    scale: .65;
-  }
-
   .scale-\[0\.72\] {
     scale: .72;
+  }
+
+  .scale-\[0\.75\] {
+    scale: .75;
   }
 
   .-rotate-0 {
@@ -1551,6 +1543,10 @@
 
   .p-px {
     padding: 1px;
+  }
+
+  .px-1 {
+    padding-inline: calc(var(--spacing) * 1);
   }
 
   .px-1\.5 {
@@ -3012,6 +3008,10 @@
   .\[\&\>\[role\=checkbox\]\]\:translate-y-\[2px\] > [role="checkbox"] {
     --tw-translate-y: 2px;
     translate: var(--tw-translate-x) var(--tw-translate-y);
+  }
+
+  .\[\&\>button\]\:hidden > button {
+    display: none;
   }
 
   .\[\&\>svg\]\:pointer-events-none > svg {

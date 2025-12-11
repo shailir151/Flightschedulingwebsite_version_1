@@ -430,10 +430,10 @@ export function FlightList({ flights, onCancelFlight, onUpdateFlight, currentUse
 
       {/* Cancel Dialog */}
       <Dialog open={!!cancelingFlight} onOpenChange={(open) => !open && setCancelingFlight(null)}>
-        <DialogContent>
+        <DialogContent aria-describedby="cancel-flight-description">
           <DialogHeader>
             <DialogTitle>Cancel Flight</DialogTitle>
-            <DialogDescription>Please provide a reason for cancelling this flight</DialogDescription>
+            <DialogDescription id="cancel-flight-description">Please provide a reason for cancelling this flight</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>
